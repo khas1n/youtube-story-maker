@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css?family=Open+Sans:400,800');
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+header {
+  width: 100%;
+  min-height: 56px;
+  height: 56px;
+  background: #fff;
+  border-bottom: 1px solid #eee;
+  z-index: 1000;
+}
+aside {
+  background: #eaeaea;
+  width: 310px;
+  float: left;
+  height: 800px;
+}
+main {
+  background: #fff;
+  width: calc(100% - 380px);
+  float: left;
+  margin-left: 50px;
+  position: relative;
+  overflow: hidden;
+}
+h1 {
+  font-family: sans-serif;
+  color: #3d3d3d;
+  font-size: 20px;
+  margin: 0 0 7px 0;
+}
+.title {
+  padding: 17px;
+  text-transform: uppercase;
+}
+.options {
+  width: 90%;
+  padding: 5%;
+}
+.control-items {
+  padding: 14px 0 20px 0;
+  border-bottom: 1px solid #afafaf;
+}
+#saveimage {
+  bottom: 10px;
+  margin: 20px 10px 20px 0px;
+  background: #2c4bff;
+  color: #fff;
+  padding: 10px 0px;
+  text-transform: uppercase;
+  text-decoration: none;
+  font-family: sans-serif;
+  font-weight: bold;
+  border-radius: 10px;
+  text-align: center;
+  display: block;
+}
+#saveimage:hover {
+  background: #1f35b3;
+}
+#saveimage:active {
+  bottom: 8px;
+}
+.gui {
+  position: absolute;
+  z-index: 100;
+  width: 360px;
+  height: 640px;
+  pointer-events: none;
+  left: 220px;
+  top: 80px;
+}

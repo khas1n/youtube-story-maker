@@ -1,0 +1,12 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true
+  },
+  "vetur.validation.interpolation": false,
+  "vetur.experimental.templateInterpolationService": true,
+  "vetur.validation.templateProps": false,
+  "[typescript]": {
+    "editor.defaultFormatter": null
+  }
+}
