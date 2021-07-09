@@ -1,33 +1,26 @@
 <template>
   <div>
-    <header id="header">
-      <div class="title">
-        <h1>Youtube Stories maker</h1>
-      </div>
-    </header>
+    <b-navbar variant="dark" type="dark">
+      <b-navbar-brand href="#">
+        Youtube Stories maker
+      </b-navbar-brand>
+      <b-form class="col-6" inline @submit.prevent="onSubmit">
+        <b-form-input
+          id="inputVideo"
+          v-model="inputVideo"
+          type="text"
+          placeholder="Enter Video Url"
+          required
+          class="mb-2 mr-sm-2 mb-sm-0 col-6"
+        />
+        <b-button type="submit" variant="primary">
+          Submit
+        </b-button>
+      </b-form>
+    </b-navbar>
 
     <aside>
       <div class="options">
-        <div id="pick-image-1" class="control-items">
-          <b-form @submit.prevent="onSubmit">
-            <b-form-group
-              id="input-group-1"
-              label="Video:"
-              label-for="inputVideo"
-            >
-              <b-form-input
-                id="inputVideo"
-                v-model="inputVideo"
-                type="text"
-                placeholder="Enter Video Url"
-                required
-              />
-            </b-form-group>
-            <b-button type="submit" variant="dark">
-              Submit
-            </b-button>
-          </b-form>
-        </div>
         <a id="saveimage" href="">download image</a>
       </div>
     </aside>
