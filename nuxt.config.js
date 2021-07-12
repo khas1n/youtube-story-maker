@@ -1,4 +1,5 @@
 export default {
+  ssr: false,
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
     title: 'youtube-story-maker',
@@ -21,9 +22,35 @@ export default {
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     '~plugins/fabric.ts',
-    '~plugins/axios.ts',
-    '~plugins/api-services.ts',
   ],
+
+  auth: {
+    strategies: {
+      google: {
+        scheme: 'oauth2',
+        endpoints: {
+          token: '/api/verification-google-code',
+        },
+        access_type: 'offline',
+        // token_key: 'access_token',
+        // access_token_endpoint: 'http://localhost:3005/verification-google-code',
+        clientId: '390669399701-ohknul2qiu9ms6sce4ug5o0b21pk2kii.apps.googleusercontent.com',
+        scope: ['https://www.googleapis.com/auth/youtube.readonly', 'openid', 'profile', 'email'],
+        codeChallengeMethod: '',
+        grantType: 'authorization_code',
+        responseType: 'code',
+        redirectUri: 'http://localhost:3000',
+      },
+    },
+    redirect: {
+      login: '/api/verification-google-code',
+      logout: '/',
+      callback: '/',
+      home: '/'
+    },
+    localStorage: false,
+    plugins: [{ src: '~/plugins/axios.ts' }, '~plugins/api-services.ts']
+  },
 
   // Auto import components: https://go.nuxtjs.dev/config-components
   components: true,
@@ -42,10 +69,25 @@ export default {
     '@nuxtjs/axios',
     // https://go.nuxtjs.dev/pwa
     '@nuxtjs/pwa',
+    '@nuxtjs/auth-next',
+    '@nuxtjs/proxy'
   ],
 
   // Axios module configuration: https://go.nuxtjs.dev/config-axios
   axios: {},
+
+  proxy: {
+    '/api/': {
+      target: 'http://localhost:3005/',
+      pathRewrite: { '^/api/': '' },
+    },
+    '/youtube/v3/videos': {
+      target: 'https://youtube.googleapis.com',
+      secure: true,
+      logLevel: 'debug',
+      changeOrigin: true
+    }
+  },
 
   // PWA module configuration: https://go.nuxtjs.dev/pwa
   pwa: {
@@ -54,10 +96,13 @@ export default {
     }
   },
 
+  middleware: ['auth'],
+
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
   },
   env: {
-    api: process.env.api
+    youtubeApiUrl: process.env.youtubeApiUrl,
+    youtubeApiKey: process.env.youtubeApiKey,
   }
 }

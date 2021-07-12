@@ -17,6 +17,9 @@
           Submit
         </b-button>
       </b-form>
+      <b-button v-if="!$auth.loggedIn" type="button" variant="primary" @click="onLoginGoogle">
+        Login With Google
+      </b-button>
     </b-navbar>
 
     <aside>
@@ -48,6 +51,10 @@ export default class IndexComponent extends Vue {
     this.setupFabric()
   }
 
+  async onLoginGoogle () : Promise<void> {
+    await this.$auth.loginWith('google')
+  }
+
   setupFabric () : void {
     this.canvas = new fabric.Canvas('c', {
       preserveObjectStacking: true
@@ -75,8 +82,9 @@ export default class IndexComponent extends Vue {
     this.addFabricTextbox()
   }
 
-  addFabricTextbox () : void {
-    const textbox = new fabric.Textbox('Caption goes here - you can resize the text with the handles', {
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  addFabricTextbox (title = '', option : object = {}) : void {
+    const optionDefault = {
       left: 240,
       top: 590,
       width: 320,
@@ -85,10 +93,13 @@ export default class IndexComponent extends Vue {
       fontFamily: 'Open Sans',
       fontWeight: 800,
       textAlign: 'center',
-      borderColor: 'red',
-      cornerColor: 'green',
       cornerSize: 12,
-      transparentCorners: false
+      transparentCorners: false,
+      selectable: false,
+    }
+    const textbox = new fabric.Textbox(title, {
+      ...optionDefault,
+      ...option
     })
     textbox.shadow = '0px 0px 10px rgba(0, 0, 0, 1)'
     this.canvas.add(textbox)
@@ -97,15 +108,16 @@ export default class IndexComponent extends Vue {
   addCenterImage (img) : void {
     fabric.Image.fromURL(img, (image) => {
       const imageF = image.set({
+        top: 550,
         angle: 0,
         scaleX: 0.3,
         scaleY: 0.3,
         centeredScaling: true,
-        selectable: true,
+        selectable: false,
         borderColor: 'red',
         cornerColor: 'green',
         cornerSize: 12,
-        transparentCorners: false,
+        transparentCorners: true,
       });
 
       (imageF as fabric.Image).cloneAsImage((copy) => {
@@ -118,7 +130,9 @@ export default class IndexComponent extends Vue {
         })
 
         this.canvas.add(this.centerImage)
-        this.canvas.centerObject(this.centerImage)
+        this.canvas.centerObjectH(this.centerImage)
+        this.centerImage.top = 280
+        this.centerImage.setCoords()
         this.canvas.moveTo(this.centerImage, 1)
       }, { width: 200, height: 200, left: 100, })
     })
@@ -149,10 +163,32 @@ export default class IndexComponent extends Vue {
     // image.src = img
   }
 
-  onSubmit (): void {
-    const bg = this.getThumb(this.inputVideo)
-    this.onAddImage(bg)
-    this.addCenterImage(bg)
+  async onSubmit (): Promise<void> {
+    if (this.$auth.loggedIn) {
+      const videoId = this.getVideoId(this.inputVideo)
+      const res = await this.$videoService.detail(videoId)
+      console.log('res: ', res)
+      const items = res.items[0]
+      if (items) {
+        const bg = this.getThumb(this.inputVideo)
+        this.onAddImage(bg)
+        this.addCenterImage(bg)
+
+        const title = items.snippet.title
+        const channelTitle = items.snippet.channelTitle
+
+        this.addFabricTextbox(title, { fontSize: 12, top: 500, })
+        this.addFabricTextbox(channelTitle, { fontSize: 12, top: 530, fill: '#eaeaea' })
+      }
+    } else {
+      this.onLoginGoogle()
+    }
+  }
+
+  getVideoId (url: string,) : string {
+    const results = url.match('[\\?&]v=([^&#]*)')
+    const videoId = (results === null) ? url : results[1]
+    return videoId
   }
 
   getThumb (url: string, size = '') : string {

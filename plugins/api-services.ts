@@ -25,7 +25,7 @@ declare module 'vuex/types/index' {
 }
 
 const myPlugin: Plugin = (context, inject) => {
-  const repositoryWithAxios = createRepository(context.$api)
+  const repositoryWithAxios = createRepository(context.$youtubeApi)
   inject('videoService', repositoryWithAxios())
 }
 

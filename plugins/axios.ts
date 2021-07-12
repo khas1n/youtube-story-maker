@@ -6,33 +6,37 @@ import { Plugin } from '@nuxt/types'
 declare module 'vue/types/vue' {
   // this.$myInjectedFunction inside Vue components
   interface Vue {
-    $api(): void
+    $youtubeApi(): void
   }
 }
 
 declare module '@nuxt/types' {
   // nuxtContext.app.$myInjectedFunction inside asyncData, fetch, plugins, middleware, nuxtServerInit
   interface NuxtAppOptions {
-    $api(): void
+    $youtubeApi(): void
   }
   // nuxtContext.$myInjectedFunction
   interface Context {
-    $api(): void
+    $youtubeApi(): void
   }
 }
 
 declare module 'vuex/types/index' {
   // this.$myInjectedFunction inside Vuex stores
   interface Store<S> {
-    $api(): void
+    $youtubeApi(): void
   }
 }
 
-const myPlugin: Plugin = ({ $axios }, inject) => {
-  const api = $axios.create()
-
-  api.setBaseURL(process.env.api as string)
-  inject('api', api)
+const myPlugin: Plugin = ({ $axios, $auth }, inject) => {
+  const youtubeApi = $axios.create()
+  const token = ($auth.strategy as any).token
+  youtubeApi.setBaseURL(process.env.youtubeApiUrl as string)
+  if (token) {
+    console.log('youtubeApi: ', youtubeApi, token.get(), process.env.youtubeApiUrl)
+    youtubeApi.setHeader('Authorization', token.get())
+  }
+  inject('youtubeApi', youtubeApi)
 }
 
 export default myPlugin
