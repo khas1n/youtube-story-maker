@@ -45,25 +45,12 @@ h1 {
   padding: 14px 0 20px 0;
   border-bottom: 1px solid #afafaf;
 }
-#saveimage {
-  bottom: 10px;
-  margin: 20px 10px 20px 0px;
-  background: #2c4bff;
-  color: #fff;
-  padding: 10px 0px;
-  text-transform: uppercase;
-  text-decoration: none;
-  font-family: sans-serif;
-  font-weight: bold;
-  border-radius: 10px;
-  text-align: center;
-  display: block;
-}
-#saveimage:hover {
-  background: #1f35b3;
-}
-#saveimage:active {
-  bottom: 8px;
+.editor {
+  width: 800px;
+  height: 800px;
+  background: url('../images/overlay-bg.png') 0 0 no-repeat;
+  background-size: cover;
+  background-color: #6b6b6b;
 }
 .gui {
   position: absolute;

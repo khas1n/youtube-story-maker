@@ -16,7 +16,7 @@
       "~/*": ["./*"],
       "@/*": ["./*"]
     },
-    "types": ["@types/node", "@nuxt/types", "@nuxtjs/axios", "@types/fabric", "@nuxtjs/auth-next"]
+    "types": ["@types/node", "@nuxt/types", "@nuxtjs/axios", "@types/fabric", "@nuxtjs/auth-next", "@types/dom-mediacapture-record"]
   },
   "exclude": ["node_modules"]
 }

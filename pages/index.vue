@@ -2,7 +2,7 @@
   <div>
     <b-navbar variant="dark" type="dark">
       <b-navbar-brand href="#">
-        Youtube Stories maker
+        Youtube Story maker
       </b-navbar-brand>
       <b-form class="col-6" inline @submit.prevent="onSubmit">
         <b-form-input
@@ -21,16 +21,35 @@
         Login With Google
       </b-button>
     </b-navbar>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-lg-2">
+          <div class="p-5">
+            <b-form-group v-slot="{ ariaDescribedby }" label="Background Overlay" class="mb-5">
+              <b-form-radio-group
+                id="radio-group-1"
+                v-model="selectedOverlay"
+                :options="optionsOverlay"
+                :aria-describedby="ariaDescribedby"
+                name="radio-options"
+              />
+            </b-form-group>
+            <b-button type="button" variant="primary" @click="onDownload">
+              Download
+            </b-button>
+          </div>
+        </div>
 
-    <aside>
-      <b-button type="button" variant="primary" @click="onDownloadImage">
-        Download Image
-      </b-button>
-    </aside>
-
-    <main id="main-area">
-      <canvas id="c" width="800" height="800" />
-    </main>
+        <div class="col-lg-8">
+          <div class="editor d-flex align-items-center justify-content-center">
+            <canvas id="c" width="360" height="640" />
+            <video id="video1" width="1280" height="720" style="display:none">
+              <source :src="require('~/video/ex-vid.mp4')">
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -38,6 +57,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { Vue, Component } from 'vue-property-decorator'
 import { fabric } from 'fabric'
+import { Canvas2Video } from 'canvas2video'
 
 @Component
 export default class IndexComponent extends Vue {
@@ -46,6 +66,9 @@ export default class IndexComponent extends Vue {
   textbox: any;
   image : any;
   centerImage: any;
+
+  selectedOverlay = 'image';
+  optionsOverlay = [{ text: 'Video', value: 'video' }, { text: 'Image', value: 'image' }]
 
   mounted () : void {
     this.setupFabric()
@@ -68,24 +91,12 @@ export default class IndexComponent extends Vue {
     }
 
     this.canvas.controlsAboveOverlay = true
-
-    // Set up overlay image
-    this.canvas.setOverlayImage(require('~/assets/images/overlay-bg.png'), this.canvas.renderAll.bind(this.canvas), {
-      opacity: 0.5,
-      angle: 0,
-      left: 0,
-      top: 0,
-      originX: 'left',
-      originY: 'top',
-      crossOrigin: 'anonymous'
-    })
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
   addFabricTextbox (title = '', option : object = {}) : void {
     const optionDefault = {
-      left: 240,
-      top: 590,
+      left: 20,
       width: 320,
       fontSize: 28,
       fill: '#fff',
@@ -130,19 +141,31 @@ export default class IndexComponent extends Vue {
     return new Blob([uInt8Array], { type: contentType })
   }
 
+  onDownload () : void {
+    if (this.selectedOverlay === 'image') {
+      this.onDownloadImage()
+    } else if (this.selectedOverlay === 'video') {
+      this.onDownloadVideo()
+    }
+  }
+
+  onDownloadVideo () : void {
+    this.startRecording()
+  }
+
   onDownloadImage (): void {
     this.canvas.overlayImage = null
     this.canvas.renderAll.bind(this.canvas)
     // Remove canvas clipping so export the image
     this.canvas.clipTo = null
     // Export the canvas to dataurl at 3 times the size and crop to the active area
-    console.log('this.canvas: ', this.canvas)
+
     const imgData = this.canvas.toDataURL({
       format: 'jpeg',
       quality: 1,
       multiplier: 3,
-      left: 220,
-      top: 80,
+      left: 0,
+      top: 0,
       width: 360,
       height: 640
     })
@@ -152,20 +175,6 @@ export default class IndexComponent extends Vue {
     link.href = objurl
     link.download = 'story.jpg'
     link.click()
-    // Reset the clipping path to what it was
-    this.canvas.clipTo = (ctx): void => {
-      ctx.rect(220, 80, 360, 640)
-    }
-    // Reset overlay image
-    this.canvas.setOverlayImage(require('~/assets/images/overlay-bg.png'), this.canvas.renderAll.bind(this.canvas), {
-      opacity: 0.5,
-      angle: 0,
-      left: 0,
-      top: 0,
-      originX: 'left',
-      originY: 'top',
-      crossOrigin: 'anonymous'
-    })
     this.canvas.renderAll()
   }
 
@@ -196,7 +205,7 @@ export default class IndexComponent extends Vue {
 
         this.canvas.add(this.centerImage)
         this.canvas.centerObjectH(this.centerImage)
-        this.centerImage.top = 280
+        this.centerImage.top = 200
 
         this.centerImage.setCoords()
         this.canvas.moveTo(this.centerImage, 1)
@@ -229,6 +238,64 @@ export default class IndexComponent extends Vue {
     // image.src = img
   }
 
+  startRecording ():void {
+    const canvas2videoInstance = new Canvas2Video({
+      canvas: document.getElementById('c') as HTMLCanvasElement,
+      outVideoType: 'mp4',
+      audio: require('~/video/ex-vid.mp4'),
+      workerOptions: {
+        logger: ({ message } : any) :void => console.log(message),
+        corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
+      }
+    })
+    canvas2videoInstance.startRecord()
+
+    setTimeout(() => {
+      canvas2videoInstance.stopRecord()
+    }, 15000)
+
+    canvas2videoInstance
+      .getStreamURL()
+      .then((url) => {
+        // const vid = document.createElement('video')
+        // vid.src = url
+        // vid.controls = true
+        // document.body.appendChild(vid)
+        const a = document.createElement('a')
+        a.download = 'story.mp4'
+        a.href = url
+        a.click()
+      })
+      .catch(err => console.error(err))
+  }
+
+  addVideo ():void {
+    const video1El = document.getElementById('video1') as HTMLVideoElement
+    const video1 = new fabric.Image(video1El, {
+      angle: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      selectable: true,
+      borderColor: 'red',
+      cornerColor: 'green',
+      cornerSize: 12,
+      transparentCorners: false,
+      objectCaching: false,
+    })
+    video1.scaleToHeight(640)
+    this.canvas.add(video1)
+    this.canvas.centerObject(video1)
+    this.canvas.moveTo(video1, 0)
+    video1El.loop = true
+    video1El.muted = false;
+    (video1.getElement() as HTMLVideoElement).play()
+    const canvas = this.canvas
+    fabric.util.requestAnimFrame(function render () {
+      canvas.renderAll()
+      fabric.util.requestAnimFrame(render)
+    })
+  }
+
   async onSubmit (): Promise<void> {
     if (this.$auth.loggedIn) {
       this.clearCanvas()
@@ -236,7 +303,6 @@ export default class IndexComponent extends Vue {
       const res = await this.$videoService.detail(videoId)
       const items = res.items[0]
       if (items) {
-        console.log('items: ', items)
         // const image = items.snippet.thumbnails.standard.url + '?not-from-cache-please'
         let bg = this.getThumb(this.inputVideo)
         const checkImageMaxExist = await this.imageExists(bg)
@@ -245,15 +311,18 @@ export default class IndexComponent extends Vue {
         }
 
         // const bg = image
-
-        this.onAddImage(bg)
+        if (this.selectedOverlay === 'video') {
+          this.addVideo()
+        } else if (this.selectedOverlay === 'image') {
+          this.onAddImage(bg)
+        }
         this.addCenterImage(bg)
 
         const title = items.snippet.title
         const channelTitle = items.snippet.channelTitle
 
-        this.addFabricTextbox(channelTitle, { fontSize: 12, top: 530, fill: '#eaeaea' })
-        this.addFabricTextbox(title, { fontSize: 12, top: 500, })
+        this.addFabricTextbox(channelTitle, { fontSize: 12, top: 455, fill: '#eaeaea' })
+        this.addFabricTextbox(title, { fontSize: 12, top: 425, })
       }
     } else {
       this.onLoginGoogle()
@@ -261,7 +330,6 @@ export default class IndexComponent extends Vue {
   }
 
   clearCanvas () : void {
-    console.log('this.canvas: ', this.canvas, this.canvas._objects)
     if (this.canvas._objects.length) {
       this.canvas.remove(...this.canvas.getObjects())
       this.canvas.renderAll()

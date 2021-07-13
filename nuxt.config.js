@@ -1,3 +1,5 @@
+import webpack from 'webpack'
+
 export default {
   ssr: false,
   // Global page headers: https://go.nuxtjs.dev/config-head
@@ -11,6 +13,12 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+    ],
+    script: [
+      {
+        type: 'module',
+        src: 'https://unpkg.com/@ffmpeg/ffmpeg@0.10.1/dist/ffmpeg.min.js'
+      }
     ]
   },
 
@@ -100,6 +108,12 @@ export default {
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
+    plugins: [
+      new webpack.ProvidePlugin({
+        // global modules
+        FFmpeg: 'FFmpeg',
+      })
+    ]
   },
   env: {
     youtubeApiUrl: process.env.youtubeApiUrl,
