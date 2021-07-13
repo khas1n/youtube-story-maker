@@ -23,9 +23,9 @@
     </b-navbar>
 
     <aside>
-      <div class="options">
-        <a id="saveimage" href="">download image</a>
-      </div>
+      <b-button type="button" variant="primary" @click="onDownloadImage">
+        Download Image
+      </b-button>
     </aside>
 
     <main id="main-area">
@@ -41,7 +41,7 @@ import { fabric } from 'fabric'
 
 @Component
 export default class IndexComponent extends Vue {
-  inputVideo = 'https://www.youtube.com/watch?v=K3Qzzggn--s';
+  inputVideo = 'https://www.youtube.com/watch?v=v4pi1LxuDHc';
   canvas : any;
   textbox: any;
   image : any;
@@ -79,7 +79,6 @@ export default class IndexComponent extends Vue {
       originY: 'top',
       crossOrigin: 'anonymous'
     })
-    this.addFabricTextbox()
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -95,7 +94,7 @@ export default class IndexComponent extends Vue {
       textAlign: 'center',
       cornerSize: 12,
       transparentCorners: false,
-      selectable: false,
+      selectable: true,
     }
     const textbox = new fabric.Textbox(title, {
       ...optionDefault,
@@ -103,6 +102,71 @@ export default class IndexComponent extends Vue {
     })
     textbox.shadow = '0px 0px 10px rgba(0, 0, 0, 1)'
     this.canvas.add(textbox)
+    this.canvas.moveTo(textbox, 10)
+  }
+
+  dataURLToBlob (dataURL : string) : Blob {
+    const BASE64_MARKER = ';base64,'
+
+    if (!dataURL.includes(BASE64_MARKER)) {
+      const parts = dataURL.split(',')
+      const contentType = parts[0].split(':')[1]
+      const raw = decodeURIComponent(parts[1])
+
+      return new Blob([raw], { type: contentType })
+    }
+
+    const parts = dataURL.split(BASE64_MARKER)
+    const contentType = parts[0].split(':')[1]
+    const raw = window.atob(parts[1])
+    const rawLength = raw.length
+
+    const uInt8Array = new Uint8Array(rawLength)
+
+    for (let i = 0; i < rawLength; ++i) {
+      uInt8Array[i] = raw.charCodeAt(i)
+    }
+
+    return new Blob([uInt8Array], { type: contentType })
+  }
+
+  onDownloadImage (): void {
+    this.canvas.overlayImage = null
+    this.canvas.renderAll.bind(this.canvas)
+    // Remove canvas clipping so export the image
+    this.canvas.clipTo = null
+    // Export the canvas to dataurl at 3 times the size and crop to the active area
+    console.log('this.canvas: ', this.canvas)
+    const imgData = this.canvas.toDataURL({
+      format: 'jpeg',
+      quality: 1,
+      multiplier: 3,
+      left: 220,
+      top: 80,
+      width: 360,
+      height: 640
+    })
+    const blob = this.dataURLToBlob(imgData)
+    const objurl = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = objurl
+    link.download = 'story.jpg'
+    link.click()
+    // Reset the clipping path to what it was
+    this.canvas.clipTo = (ctx): void => {
+      ctx.rect(220, 80, 360, 640)
+    }
+    // Reset overlay image
+    this.canvas.setOverlayImage(require('~/assets/images/overlay-bg.png'), this.canvas.renderAll.bind(this.canvas), {
+      opacity: 0.5,
+      angle: 0,
+      left: 0,
+      top: 0,
+      originX: 'left',
+      originY: 'top',
+      crossOrigin: 'anonymous'
+    })
+    this.canvas.renderAll()
   }
 
   addCenterImage (img) : void {
@@ -119,6 +183,7 @@ export default class IndexComponent extends Vue {
         cornerSize: 12,
         transparentCorners: true,
       });
+      (imageF as any).scaleToHeight(300);
 
       (imageF as fabric.Image).cloneAsImage((copy) => {
         this.centerImage = copy;
@@ -132,10 +197,11 @@ export default class IndexComponent extends Vue {
         this.canvas.add(this.centerImage)
         this.canvas.centerObjectH(this.centerImage)
         this.centerImage.top = 280
+
         this.centerImage.setCoords()
         this.canvas.moveTo(this.centerImage, 1)
-      }, { width: 200, height: 200, left: 100, })
-    })
+      }, { width: 200, height: 200, left: 150, top: 25 })
+    }, { crossOrigin: 'anonymous' })
   }
 
   onAddImage (img : string) : void {
@@ -165,24 +231,50 @@ export default class IndexComponent extends Vue {
 
   async onSubmit (): Promise<void> {
     if (this.$auth.loggedIn) {
+      this.clearCanvas()
       const videoId = this.getVideoId(this.inputVideo)
       const res = await this.$videoService.detail(videoId)
-      console.log('res: ', res)
       const items = res.items[0]
       if (items) {
-        const bg = this.getThumb(this.inputVideo)
+        console.log('items: ', items)
+        // const image = items.snippet.thumbnails.standard.url + '?not-from-cache-please'
+        let bg = this.getThumb(this.inputVideo)
+        const checkImageMaxExist = await this.imageExists(bg)
+        if (!checkImageMaxExist) {
+          bg = this.getThumb(this.inputVideo, 'sd')
+        }
+
+        // const bg = image
+
         this.onAddImage(bg)
         this.addCenterImage(bg)
 
         const title = items.snippet.title
         const channelTitle = items.snippet.channelTitle
 
-        this.addFabricTextbox(title, { fontSize: 12, top: 500, })
         this.addFabricTextbox(channelTitle, { fontSize: 12, top: 530, fill: '#eaeaea' })
+        this.addFabricTextbox(title, { fontSize: 12, top: 500, })
       }
     } else {
       this.onLoginGoogle()
     }
+  }
+
+  clearCanvas () : void {
+    console.log('this.canvas: ', this.canvas, this.canvas._objects)
+    if (this.canvas._objects.length) {
+      this.canvas.remove(...this.canvas.getObjects())
+      this.canvas.renderAll()
+    }
+  }
+
+  imageExists (imageUrl: string) : any {
+    const http = new XMLHttpRequest()
+
+    http.open('HEAD', imageUrl, false)
+    http.send()
+
+    return http.status !== 404
   }
 
   getVideoId (url: string,) : string {
@@ -199,8 +291,8 @@ export default class IndexComponent extends Vue {
     const results = url.match('[\\?&]v=([^&#]*)')
     const video = (results === null) ? url : results[1]
 
-    if (size === 'small') {
-      return 'http://img.youtube.com/vi/' + video + '/2.jpg'
+    if (size === 'sd') {
+      return 'http://img.youtube.com/vi/' + video + '/sddefault.jpg'
     }
     return 'http://img.youtube.com/vi/' + video + '/maxresdefault.jpg'
   }
