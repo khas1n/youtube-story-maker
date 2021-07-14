@@ -43,8 +43,9 @@
         <div class="col-lg-8">
           <div class="editor d-flex align-items-center justify-content-center">
             <canvas id="c" width="360" height="640" />
-            <video id="video1" width="1280" height="720" style="display:none">
-              <source :src="require('~/video/ex-vid.mp4')">
+            <video v-if="videoOverlayUrl" id="video1" width="1280" height="720" style="display:none">
+              <source :src="videoOverlayUrl">
+              <!-- <source :src="require('~/video/ex-vid.mp4')"> -->
             </video>
           </div>
         </div>
@@ -70,6 +71,8 @@ export default class IndexComponent extends Vue {
   selectedOverlay = 'image';
   optionsOverlay = [{ text: 'Video', value: 'video' }, { text: 'Image', value: 'image' }]
 
+  videoOverlayUrl = '';
+
   mounted () : void {
     this.setupFabric()
   }
@@ -90,7 +93,42 @@ export default class IndexComponent extends Vue {
       ctx.rect(220, 80, 360, 640)
     }
 
-    this.canvas.controlsAboveOverlay = true
+    this.canvas.controlsAboveOverlay = true;
+    (fabric as any).CustomVideo = fabric.util.createClass(fabric.Image, {
+      type: 'customvideo',
+      cropRect: null,
+
+      initialize (video, options) {
+        const defaultOpts = {
+          lockRotation: true,
+          objectCaching: true,
+          cacheProperties: ['time']
+        }
+        options = options || {}
+
+        this.callSuper('initialize', video,
+          Object.assign({}, defaultOpts, options))
+      },
+      _draw (video, ctx, w, h) {
+        const c = this.cropRect
+        const d = {
+          x: -this.width / 2,
+          y: -this.height / 2,
+          w: this.width,
+          h: this.height
+        }
+        if (c) {
+          ctx.drawImage(video, c.x, c.y, c.w, c.h, d.x, d.y, d.w, d.h)
+        } else {
+          ctx.drawImage(video, d.x, d.y, d.w, d.h)
+        }
+      },
+
+      _render (ctx) {
+        // console.log('rendered', this.cropLeft)
+        this._draw(this.getElement(), ctx)
+      }
+    })
   }
 
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -242,12 +280,15 @@ export default class IndexComponent extends Vue {
     const canvas2videoInstance = new Canvas2Video({
       canvas: document.getElementById('c') as HTMLCanvasElement,
       outVideoType: 'mp4',
-      audio: require('~/video/ex-vid.mp4'),
+      audio: this.videoOverlayUrl,
+      // audio: require('~/video/mtf7hC17IBM.mp4'),
       workerOptions: {
         logger: ({ message } : any) :void => console.log(message),
         corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
       }
     })
+    const video1El = document.getElementById('video1') as HTMLVideoElement
+    video1El.currentTime = 0
     canvas2videoInstance.startRecord()
 
     setTimeout(() => {
@@ -271,10 +312,13 @@ export default class IndexComponent extends Vue {
 
   addVideo ():void {
     const video1El = document.getElementById('video1') as HTMLVideoElement
-    const video1 = new fabric.Image(video1El, {
-      angle: 0,
-      scaleX: 0.5,
-      scaleY: 0.5,
+    console.log('video1El: ', video1El)
+    const video1 = new (fabric as any).CustomVideo(video1El, {
+      left: 0,
+      top: 0,
+      height: 640,
+      originX: 'center',
+      originY: 'center',
       selectable: true,
       borderColor: 'red',
       cornerColor: 'green',
@@ -300,7 +344,7 @@ export default class IndexComponent extends Vue {
     if (this.$auth.loggedIn) {
       this.clearCanvas()
       const videoId = this.getVideoId(this.inputVideo)
-      const res = await this.$videoService.detail(videoId)
+      const res = await this.$youtubeService.detail(videoId)
       const items = res.items[0]
       if (items) {
         // const image = items.snippet.thumbnails.standard.url + '?not-from-cache-please'
@@ -312,7 +356,11 @@ export default class IndexComponent extends Vue {
 
         // const bg = image
         if (this.selectedOverlay === 'video') {
-          this.addVideo()
+          await this.$videoService.processVideo(this.inputVideo)
+          this.videoOverlayUrl = `${process.env.api}video/${videoId}.mp4`
+          setTimeout(() => {
+            this.addVideo()
+          }, 500)
         } else if (this.selectedOverlay === 'image') {
           this.onAddImage(bg)
         }

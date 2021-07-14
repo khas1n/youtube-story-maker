@@ -1,32 +1,40 @@
 import { Plugin } from '@nuxt/types'
-import createRepository, { VideoServiceInterface } from '~/services/video.service'
+import createRepositoryVideo, { VideoServiceInterface } from '~/services/video.service'
+import createRepositoryYoutube, { YoutubeServiceInterface } from '~/services/youtube.service'
 
 declare module 'vue/types/vue' {
   interface Vue {
-    $videoService: VideoServiceInterface
+    $videoService: VideoServiceInterface,
+    $youtubeService: YoutubeServiceInterface,
   }
 }
 
 declare module '@nuxt/types' {
   interface NuxtAppOptions {
-    $videoService: VideoServiceInterface
+    $videoService: VideoServiceInterface,
+    $youtubeService: YoutubeServiceInterface,
   }
   // nuxtContext.$myInjectedFunction
   interface Context {
-    $videoService: VideoServiceInterface
+    $videoService: VideoServiceInterface,
+    $youtubeService: YoutubeServiceInterface,
   }
 }
 
 declare module 'vuex/types/index' {
   // this.$myInjectedFunction inside Vuex stores
   interface Store<S> {
-    $videoService: VideoServiceInterface
+    $videoService: VideoServiceInterface,
+    $youtubeService: YoutubeServiceInterface,
   }
 }
 
 const myPlugin: Plugin = (context, inject) => {
-  const repositoryWithAxios = createRepository(context.$youtubeApi)
-  inject('videoService', repositoryWithAxios())
+  const repositoryYoutubeWithAxios = createRepositoryYoutube(context.$youtubeApi)
+  inject('youtubeService', repositoryYoutubeWithAxios())
+
+  const repositoryApiWithAxios = createRepositoryVideo(context.$api)
+  inject('videoService', repositoryApiWithAxios())
 }
 
 export default myPlugin

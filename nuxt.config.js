@@ -118,5 +118,6 @@ export default {
   env: {
     youtubeApiUrl: process.env.youtubeApiUrl,
     youtubeApiKey: process.env.youtubeApiKey,
+    api: process.env.api,
   }
 }
