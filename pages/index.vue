@@ -9,7 +9,7 @@
           id="inputVideo"
           v-model="inputVideo"
           type="text"
-          placeholder="Enter Video Url"
+          placeholder="Ex : https://www.youtube.com/watch?v=v4pi1LxuDHc"
           required
           class="mb-2 mr-sm-2 mb-sm-0 col-6"
         />
@@ -17,39 +17,38 @@
           Submit
         </b-button>
       </b-form>
-      <b-button v-if="!$auth.loggedIn" type="button" variant="primary" @click="onLoginGoogle">
-        Login With Google
-      </b-button>
     </b-navbar>
     <div class="container-fluid">
-      <div class="row">
-        <div class="col-lg-2">
-          <div class="p-5">
-            <b-form-group v-slot="{ ariaDescribedby }" label="Background Overlay" class="mb-5">
-              <b-form-radio-group
-                id="radio-group-1"
-                v-model="selectedOverlay"
-                :options="optionsOverlay"
-                :aria-describedby="ariaDescribedby"
-                name="radio-options"
-              />
-            </b-form-group>
-            <b-button type="button" variant="primary" @click="onDownload">
-              Download
-            </b-button>
+      <b-overlay :show="loading">
+        <div class="row">
+          <div class="col-lg-2">
+            <div class="p-5">
+              <b-form-group v-slot="{ ariaDescribedby }" label="Background Overlay" class="mb-5">
+                <b-form-radio-group
+                  id="radio-group-1"
+                  v-model="selectedOverlay"
+                  :options="optionsOverlay"
+                  :aria-describedby="ariaDescribedby"
+                  name="radio-options"
+                />
+              </b-form-group>
+              <b-button type="button" variant="primary" @click="onDownload">
+                Download
+              </b-button>
+            </div>
           </div>
-        </div>
 
-        <div class="col-lg-8">
-          <div class="editor d-flex align-items-center justify-content-center">
-            <canvas id="c" width="360" height="640" />
-            <video v-if="videoOverlayUrl" id="video1" width="1280" height="720" style="display:none">
-              <source :src="videoOverlayUrl">
+          <div class="col-lg-8">
+            <div class="editor d-flex align-items-center justify-content-center">
+              <canvas id="c" width="360" height="640" />
+              <video v-if="videoOverlayUrl" id="video1" width="1280" height="720" style="display:none">
+                <source :src="videoOverlayUrl">
               <!-- <source :src="require('~/video/ex-vid.mp4')"> -->
-            </video>
+              </video>
+            </div>
           </div>
         </div>
-      </div>
+      </b-overlay>
     </div>
   </div>
 </template>
@@ -58,16 +57,17 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { Vue, Component } from 'vue-property-decorator'
 import { fabric } from 'fabric'
-import { Canvas2Video } from 'canvas2video'
+import { Canvas2Video } from './../canvas2video/index'
 
 @Component
 export default class IndexComponent extends Vue {
-  inputVideo = 'https://www.youtube.com/watch?v=v4pi1LxuDHc';
+  inputVideo = '';
   canvas : any;
   textbox: any;
   image : any;
   centerImage: any;
-
+  duration = 15;
+  loading = false;
   selectedOverlay = 'image';
   optionsOverlay = [{ text: 'Video', value: 'video' }, { text: 'Image', value: 'image' }]
 
@@ -180,6 +180,7 @@ export default class IndexComponent extends Vue {
   }
 
   onDownload () : void {
+    this.loading = true
     if (this.selectedOverlay === 'image') {
       this.onDownloadImage()
     } else if (this.selectedOverlay === 'video') {
@@ -213,6 +214,7 @@ export default class IndexComponent extends Vue {
     link.href = objurl
     link.download = 'story.jpg'
     link.click()
+    this.loading = false
     this.canvas.renderAll()
   }
 
@@ -248,7 +250,7 @@ export default class IndexComponent extends Vue {
         this.centerImage.setCoords()
         this.canvas.moveTo(this.centerImage, 1)
       }, { width: 200, height: 200, left: 150, top: 25 })
-    }, { crossOrigin: 'anonymous' })
+    })
   }
 
   onAddImage (img : string) : void {
@@ -281,38 +283,32 @@ export default class IndexComponent extends Vue {
       canvas: document.getElementById('c') as HTMLCanvasElement,
       outVideoType: 'mp4',
       audio: this.videoOverlayUrl,
-      // audio: require('~/video/mtf7hC17IBM.mp4'),
       workerOptions: {
-        logger: ({ message } : any) :void => console.log(message),
         corePath: 'https://unpkg.com/@ffmpeg/core@0.10.0/dist/ffmpeg-core.js'
       }
     })
     const video1El = document.getElementById('video1') as HTMLVideoElement
     video1El.currentTime = 0
     canvas2videoInstance.startRecord()
-
+    const duration = this.duration * 1000
     setTimeout(() => {
       canvas2videoInstance.stopRecord()
-    }, 15000)
+    }, duration)
 
     canvas2videoInstance
       .getStreamURL()
       .then((url) => {
-        // const vid = document.createElement('video')
-        // vid.src = url
-        // vid.controls = true
-        // document.body.appendChild(vid)
         const a = document.createElement('a')
         a.download = 'story.mp4'
         a.href = url
         a.click()
+        this.loading = false
       })
       .catch(err => console.error(err))
   }
 
   addVideo ():void {
     const video1El = document.getElementById('video1') as HTMLVideoElement
-    console.log('video1El: ', video1El)
     const video1 = new (fabric as any).CustomVideo(video1El, {
       left: 0,
       top: 0,
@@ -341,40 +337,33 @@ export default class IndexComponent extends Vue {
   }
 
   async onSubmit (): Promise<void> {
-    if (this.$auth.loggedIn) {
-      this.clearCanvas()
-      const videoId = this.getVideoId(this.inputVideo)
-      const res = await this.$youtubeService.detail(videoId)
-      const items = res.items[0]
-      if (items) {
-        // const image = items.snippet.thumbnails.standard.url + '?not-from-cache-please'
-        let bg = this.getThumb(this.inputVideo)
-        const checkImageMaxExist = await this.imageExists(bg)
-        if (!checkImageMaxExist) {
-          bg = this.getThumb(this.inputVideo, 'sd')
-        }
+    this.loading = true
+    this.clearCanvas()
+    const videoDetail = await this.$videoService.getVideoDetail(this.inputVideo)
+    const thumbnails = videoDetail.thumbnails
+    const thumbnail = thumbnails[thumbnails.length - 1].url
+    const videoId = this.getVideoId(this.inputVideo)
 
-        // const bg = image
-        if (this.selectedOverlay === 'video') {
-          await this.$videoService.processVideo(this.inputVideo)
-          this.videoOverlayUrl = `${process.env.api}video/${videoId}.mp4`
-          setTimeout(() => {
-            this.addVideo()
-          }, 500)
-        } else if (this.selectedOverlay === 'image') {
-          this.onAddImage(bg)
-        }
-        this.addCenterImage(bg)
+    const bg = `${process.env.api}ytubeimg/` + encodeURIComponent(thumbnail)
 
-        const title = items.snippet.title
-        const channelTitle = items.snippet.channelTitle
-
-        this.addFabricTextbox(channelTitle, { fontSize: 12, top: 455, fill: '#eaeaea' })
-        this.addFabricTextbox(title, { fontSize: 12, top: 425, })
-      }
-    } else {
-      this.onLoginGoogle()
+    if (this.selectedOverlay === 'video') {
+      this.videoOverlayUrl = ''
+      await this.$videoService.processVideo(this.inputVideo, this.duration)
+      this.videoOverlayUrl = `${process.env.api}video/${videoId}.mp4`
+      setTimeout(() => {
+        this.addVideo()
+      }, 500)
+    } else if (this.selectedOverlay === 'image') {
+      this.onAddImage(bg)
     }
+    this.addCenterImage(bg)
+
+    const title = videoDetail.title
+    const channelTitle = videoDetail.ownerChannelName
+
+    this.addFabricTextbox(channelTitle, { fontSize: 12, top: 455, fill: '#eaeaea' })
+    this.addFabricTextbox(title, { fontSize: 12, top: 425, })
+    this.loading = false
   }
 
   clearCanvas () : void {

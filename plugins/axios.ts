@@ -34,12 +34,7 @@ declare module 'vuex/types/index' {
 
 const myPlugin: Plugin = ({ $axios, $auth }, inject) => {
   const youtubeApi = $axios.create()
-  const token = ($auth.strategy as any).token
-  youtubeApi.setBaseURL(process.env.youtubeApiUrl as string)
-  if (token) {
-    console.log('youtubeApi: ', youtubeApi, token.get(), process.env.youtubeApiUrl)
-    youtubeApi.setHeader('Authorization', token.get())
-  }
+
   inject('youtubeApi', youtubeApi)
 
   const api = $axios.create()
