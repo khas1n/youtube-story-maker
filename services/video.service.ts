@@ -1,14 +1,15 @@
 
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 export interface VideoServiceInterface {
-  processVideo: (url:string, duration: number) => Promise<any>;
+  processVideo: (url:string, duration: number, startTime : string) => Promise<any>;
   getVideoDetail: (url:string) => Promise<any>;
 }
 export default $axios => (): VideoServiceInterface => ({
-  processVideo (url: string, duration : number): Promise<any> {
+  processVideo (url: string, duration: number, startTime = '00:01:00'): Promise<any> {
     const payload = {
       url,
-      duration
+      duration,
+      startTime
     }
     return $axios.$post('youtube-process', payload)
   },

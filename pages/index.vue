@@ -4,52 +4,52 @@
       <b-navbar-brand href="#">
         Youtube Story maker
       </b-navbar-brand>
-      <b-form class="col-6" inline @submit.prevent="onSubmit">
-        <b-form-input
-          id="inputVideo"
-          v-model="inputVideo"
-          type="text"
-          placeholder="Ex : https://www.youtube.com/watch?v=v4pi1LxuDHc"
-          required
-          class="mb-2 mr-sm-2 mb-sm-0 col-6"
-        />
-        <b-button type="submit" variant="primary">
-          Submit
-        </b-button>
-      </b-form>
     </b-navbar>
-    <div class="container-fluid">
-      <b-overlay :show="loading">
-        <div class="row">
-          <div class="col-lg-2">
-            <div class="p-5">
-              <b-form-group v-slot="{ ariaDescribedby }" label="Background Overlay" class="mb-5">
-                <b-form-radio-group
-                  id="radio-group-1"
-                  v-model="selectedOverlay"
-                  :options="optionsOverlay"
-                  :aria-describedby="ariaDescribedby"
-                  name="radio-options"
-                />
-              </b-form-group>
-              <b-button type="button" variant="primary" @click="onDownload">
-                Download
+    <b-overlay :show="loading" class="container-fluid px-0 ">
+      <div class="row no-gutters content">
+        <div class="col-lg-2">
+          <div class="p-4">
+            <b-form @submit.prevent="onSubmit">
+              <div class="row mb-3">
+                <b-form-group label="Youtube Url" class="mb-3 col-lg-12">
+                  <b-form-input
+                    id="inputVideo"
+                    v-model="inputVideo"
+                    type="text"
+                    placeholder="Ex : https://www.youtube.com/watch?v=v4pi1LxuDHc"
+                    required
+                  />
+                </b-form-group>
+                <b-form-group v-slot="{ ariaDescribedby }" label="Background Overlay" class="mb-3 col-lg-12">
+                  <b-form-radio-group
+                    id="radio-group-1"
+                    v-model="selectedOverlay"
+                    :options="optionsOverlay"
+                    :aria-describedby="ariaDescribedby"
+                    name="radio-options"
+                  />
+                </b-form-group>
+              </div>
+              <b-button type="submit" variant="primary">
+                Submit
               </b-button>
-            </div>
-          </div>
-
-          <div class="col-lg-8">
-            <div class="editor d-flex align-items-center justify-content-center">
-              <canvas id="c" width="360" height="640" />
-              <video v-if="videoOverlayUrl" id="video1" width="1280" height="720" style="display:none">
-                <source :src="videoOverlayUrl">
-              <!-- <source :src="require('~/video/ex-vid.mp4')"> -->
-              </video>
-            </div>
+            </b-form>
+            <hr>
+            <b-button type="button" variant="primary" @click="onDownload">
+              Download
+            </b-button>
           </div>
         </div>
-      </b-overlay>
-    </div>
+        <div class="col-lg-10">
+          <div class="editor d-flex align-items-center justify-content-center h-100">
+            <canvas id="c" width="360" height="640" />
+            <video v-if="videoOverlayUrl" id="video1" width="1280" height="720" style="display:none">
+              <source :src="videoOverlayUrl">
+            </video>
+          </div>
+        </div>
+      </div>
+    </b-overlay>
   </div>
 </template>
 
@@ -72,6 +72,12 @@ export default class IndexComponent extends Vue {
   optionsOverlay = [{ text: 'Video', value: 'video' }, { text: 'Image', value: 'image' }]
 
   videoOverlayUrl = '';
+
+  onChangeOverlay () : void {
+    if (this.inputVideo) {
+      this.onSubmit()
+    }
+  }
 
   mounted () : void {
     this.setupFabric()
@@ -348,7 +354,7 @@ export default class IndexComponent extends Vue {
 
     if (this.selectedOverlay === 'video') {
       this.videoOverlayUrl = ''
-      await this.$videoService.processVideo(this.inputVideo, this.duration)
+      await this.$videoService.processVideo(this.inputVideo, this.duration, '00:00:45')
       this.videoOverlayUrl = `${process.env.api}video/${videoId}.mp4`
       setTimeout(() => {
         this.addVideo()
@@ -361,7 +367,7 @@ export default class IndexComponent extends Vue {
     const title = videoDetail.title
     const channelTitle = videoDetail.ownerChannelName
 
-    this.addFabricTextbox(channelTitle, { fontSize: 12, top: 455, fill: '#eaeaea' })
+    this.addFabricTextbox(channelTitle, { fontSize: 12, top: 465, fill: '#eaeaea' })
     this.addFabricTextbox(title, { fontSize: 12, top: 425, })
     this.loading = false
   }
@@ -403,3 +409,15 @@ export default class IndexComponent extends Vue {
   }
 }
 </script>
+<style lang="scss">
+  .content {
+    min-height: calc(100vh - 56px);
+  }
+  .editor {
+    background-color: #6b6b6b;
+  }
+  #c {
+    background: #3a3a3a;
+    box-shadow: rgba(0, 0, 0, 0.4) 0px 2px 4px, rgba(0, 0, 0, 0.3) 0px 7px 13px -3px, rgba(0, 0, 0, 0.2) 0px -3px 0px inset;
+  }
+</style>
