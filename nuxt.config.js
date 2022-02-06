@@ -12,7 +12,9 @@ export default {
       { name: 'format-detection', content: 'telephone=no' }
     ],
     link: [
-      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+      { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com/' },
+      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css?family=Open+Sans:400,800' },
     ],
     script: [
       {
@@ -104,7 +106,11 @@ export default {
     }
   },
 
-  middleware: ['auth'],
+  middleware: ['auth', '~plugins/headers.js'],
+
+  serverMiddleware: [
+    '~plugins/headers.js'
+  ],
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
