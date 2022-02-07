@@ -5,7 +5,7 @@ An app for create instagram/whatsapp story using youtube video
 
 ## Demo
 
-![App Screenshot](https://i.giphy.com/media/womZwYeLmkrlw7cvbW/giphy-downsized-large.gif)
+![App Screenshot](https://i.ibb.co/34CBw70/ezgif-5-104964a85d-small.gif)
 ## Installation
 Make sure [backend server](https://github.com/khas1n/story-maker-backend) is up and running in your mechine.
 
